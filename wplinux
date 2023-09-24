@@ -72,7 +72,7 @@ getTableRows() {
   fi
 
   if ! test -f "${!currentWikiTable}"; then
-    echo "[DEBUG] creates new file"
+    # echo "creates new file"
 
     # Set the address for the web page, which is the source for the used links:
     if [ "$1" = "UNIX" ]; then
