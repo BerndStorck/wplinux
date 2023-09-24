@@ -1,0 +1,266 @@
+#!/bin/bash
+#
+# wplinux
+#
+# Version     1.2.0
+# History:    2020-05-25, 2023-09-24
+#
+# Project Description:
+#
+# Read information from German Wikipedia articles about Unix and Linux commands
+# in the bash shell.
+#
+# Wikipedia uses information boxes called navigation boxes for presenting links
+# to Wikipedia articles about UNIX or GNU core linux commands. This script
+# reads and parses those two navigation boxes and tries to display the
+# beginning of the articles in text mode.
+#
+# Author:     Bernd Storck
+# Contact:    https://www.facebook.com/BStLinux/
+#
+# Copyright:  Bernd Storck
+# License:    Fick dich ins Knie 1.0
+#
+
+
+TITLE=" |===–  FRAGE WIKIPEDIA NACH LINUX  –===| "
+
+db="$(ls -1 ~/.wplinux)"
+
+declare categories=
+declare articles=
+
+declare choosen_categorie=
+declare choosen_article=
+
+declare dataDir="/tmp/"
+declare prefixTableGNU="${dataDir}wplinux-tableGNU-"
+declare prefixTableUNIX="${dataDir}wplinux-tableUNIX-"
+# declare tableGNU="${prefixTableGNU}$(date -u +"%Y-%m-%d")"'.tmp'
+declare tableGNU
+tableGNU="${prefixTableGNU}$(date -u +"%Y-%m-%d")"'.tmp'
+# declare tableUNIX="${prefixTableUNIX}$(date -u +"%Y-%m-%d")"'.tmp'
+declare tableUNIX
+tableUNIX="${prefixTableUNIX}$(date -u +"%Y-%m-%d")"'.tmp'
+# echo "$dataDir"
+# echo "$prefixTableGNU"
+# echo "$prefixTableUNIX"
+# echo "$tableGNU"
+# echo "$tableUNIX"
+
+
+cls() {
+  clear
+  echo -e "\n$TITLE\n"
+}
+
+
+getTableRows() {
+# Gets the table rows with the relevant data from de.Wikipedia:
+#
+# Wikipedia uses information boxes called navigation boxes for
+# presenting links to Wikipedia articles about UNIX or GNU core linux
+# commands. This script reads and parses those two navigation boxes and
+# tries to display the beginning of the articles in text mode.
+
+  local currentWikiTable="table${1}"
+  local_source_copy='wplinux-source_'"$(date -u +"%Y-%m-%d")"'.tmp'
+
+  # Removes obviously unusable files, which are nearly empty:
+  if [ -f "${!currentWikiTable}" ] && (( "$(wc --bytes < "${!currentWikiTable}")" < 20 )); then
+    rm -f "${!currentWikiTable}"
+  fi
+
+  if ! test -f "${!currentWikiTable}"; then
+    echo "[DEBUG] creates new file"
+
+    # Set the address for the web page, which is the source for the used links:
+    if [ "$1" = "UNIX" ]; then
+      source_page="https://de.wikipedia.org/wiki/Benutzer:Benji/Unix/Vorlage:Navigationsleiste_Unix-Befehle"
+    else
+      source_page="https://de.wikipedia.org/wiki/Vorlage:Navigationsleiste_Befehle_der_GNU_core_utilities"
+    fi
+
+    # Download data source, the web page with the link list:
+    download_ok=false
+    until "$download_ok"; do
+      wget --quiet --output-document="$local_source_copy" "$source_page"
+      download_ok=true
+      sleep 2
+    done
+
+    # Extract central table of the web page with the relevant data:
+    grep -m1 -A9999 '<tbody' "$local_source_copy" | \
+    grep -B9999 '</\tbody' | \
+    sed '/tbody/d' | \
+    sed '/^[[:blank:]]*$/d' > "${!currentWikiTable}"
+    echo "##EOF##" >> "${!currentWikiTable}"
+
+  else
+    # echo "Copies existing file"
+    cp "${!currentWikiTable}" "$local_source_copy"
+  fi
+}
+
+
+getCategories() {
+# The categories of commands are in a td field of the input table which
+# contains only the category name included in a the HTML bold tag.
+# Something like this "<td [...]><b>category name</b>[...]</td>.
+  local currentWikiTable="table${1}"
+
+  if [ "$1" = "UNIX" ]; then
+    categories="$( grep -F -A1 '<tr>' "${!currentWikiTable}" | sed -En '/^<td /s/^.*\">(.*):$/\1/p' )"
+  else
+#   categories="$( sed -En '/^<td /s:^.*<b>(.*)</b>$:\1:p' "${!currentWikiTable}" )";
+    categories="$( sed -En '/^<td /s:^.*<b>(.*)</b>$:\1:p' "${!currentWikiTable}" | sed 's/^[[:blank:]]*//' | sed '/^$/d' )";
+  fi
+}
+
+
+getCategorizedCommands() {
+# Generates a key-value list with the command as key and the relative
+# wikipedia address for the article. Result is a list with rows like
+# "join:Join_(Unix)".
+  local currentWikiTable="table${1}"
+  local current_category="$2"
+
+  if [ "$1" = "UNIX" ]; then     # UNIX Commands:
+    articles="$(\
+      grep -m1 -E -A9999 "^<td\b[^>]*\">(${current_category}):$" "${!currentWikiTable}" | \
+      tail -n +3 | \
+      grep -m1 -E -B9999 '(</tr>|##EOF##)' | \
+      head -n -1 | \
+      sed 's:<a href=:\n<a href=:g' | \
+      grep '^<a href=' | \
+      sed '/\(Seite nicht vorhanden\)/d' | \
+      sed -E '/^<a href=/s;^.*/wiki/([^"]*)".*>([[:alnum:]]*)</a>.*$;\2:\1;' \
+      )"
+  else                 # GNU Core Commands:
+    articles="$(\
+      grep -m1 -E -A9999 "^<td .*<b>(.*${current_category}.*)<\/b>$" "${!currentWikiTable}" | \
+      tail -n +3 | \
+      grep -m1 -E -B9999 "^(<td .*<b>.*<\/b>|##EOF##)$" | \
+      head -n -1 | \
+      grep -F '<a href=' | \
+      sed -E '/^(<p>)?<a href=/s;^.*/wiki/([^"]*)".*>([[:alnum:]]*)</a>.*$;\2:\1;' \
+    )"
+  fi
+    wikiTable="${!currentWikiTable}"
+}
+
+
+cls
+echo -e " Wählen Sie eine Befehlsliste durch Eingabe der angezeigten Nummer!"
+echo "
+  (1) GNU Core Commands
+
+  (2) UNIX Commands
+"
+read -p " ?: " int_choosen_command_set
+if [ $int_choosen_command_set -eq 2 ]; then
+  choosen_command_set="UNIX"
+else
+  choosen_command_set="GNU"
+fi
+
+# echo "[DEBUG] choosen_command_set: \"$choosen_command_set\""; exit
+
+getTableRows  "$choosen_command_set"
+getCategories "$choosen_command_set"
+
+cls
+echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Themenbereich!\n"
+count=0
+for i in $categories; do
+  count=$(( count + 1 ))
+  echo -e "\t$count) $i";
+  arr_cat["$count"]="$i"
+done
+
+echo; read -r -p " ?: " int_choosen_categorie
+choosen_categorie="${arr_cat["$int_choosen_categorie"]}"
+getCategorizedCommands "$choosen_command_set" "$choosen_categorie"
+
+count=0
+for i in ${articles}; do
+  count=$(( count + 1 ))
+  arr_key[  "$count" ]="$(cut -d: -f1 <<< "$i")"
+  arr_link[ "$count" ]="$(cut -d: -f2 <<< "$i")"
+  article_keys="${article_keys}$(cut -d: -f1 <<< "$i")..(${count})"
+  if [ $(( count % 3 )) -ne 0 ]; then
+    separator="\n"
+  else
+    separator="\n"
+  fi
+  article_keys="${article_keys}${separator}"
+done
+article_keys="${article_keys}\n"
+
+cls
+echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Wikipedia-Artikel!\n"
+echo -e "$(echo -e "$article_keys" | columns -I4 -c3 -w20 --line-separation="\n")"
+echo; read -r -p " ?: " int_choosen_article
+# echo "${arr_link["$int_choosen_article"]}"
+
+if [ "$(grep -F -c '#' <<< "${arr_link["$int_choosen_article"]}")" -eq 0 ]; then
+    wikisearch="${arr_link["$int_choosen_article"]}"
+else
+    wikilink="https://de.wikipedia.org/wiki/"${arr_link["$int_choosen_article"]}""
+fi
+
+# echo "$wikisearch"
+
+                  # For links which are goning to a subsektion of a
+if [ "$wikilink" ]; then  # .......  # wikipedia article. the script tries to start one
+                  # of the webbrowsers "links", "lynx" or "elinks".
+  if [ "$(command -v links2 > /dev/null)" ]; then
+    webbrowser="links2"
+  elif [ "$(command -v lynx > /dev/null)" ]; then
+    webbrowser="lynx -nocolor"
+  elif [ "$(command -v elinks > /dev/null)" ]; then
+    webbrowser="elinks"
+  fi
+echo "[DEBUG] webbrowser:\"$webbrowser\" / wikilink: \"$wikilink\""; exit
+  eval "$webbrowser" '$wikilink'
+
+else  # ...........................  # For commands, which have an own Wikipedia article.
+
+  wikipedia2text -l de "$wikisearch" > /tmp/wplinux.tmp
+  if grep -q "^Inhaltsverzeichnis" /tmp/wplinux.tmp; then
+    # echo "Inhaltsverzeichnis"
+    filter_02='grep -F -m1 -B400 "Inhaltsverzeichnis"'
+    filter_04="cat"
+  else
+    filter_02="cat"
+    if grep -q "Weblinks" /tmp/wplinux.tmp; then
+      # echo "Weblinks"
+      # filter_04="grep -m1 -E -B9999 '^Weblinks[[:blank:]]*$'"
+      filter_04="grep -m1 -E -B9999 '^Weblinks[[:blank:]]*$'"
+    else
+      filter_04="cat"
+    fi
+  fi
+
+
+# wikipedia2text -l de "$wikisearch" | grep -m1 "^Weblinks" | \
+# sed -E 's/^(.*)[[:blank:]]*\[Bearbeiten \| Quelltext bearbeiten\]$/\1 \2/' | \
+# sed -E 's:^(.*)$:##\1##:' | od -a
+# exit
+
+
+  eval "$filter_02" < /tmp/wplinux.tmp | \
+  sed '/^[[:blank:]]*Link:/d' | \
+  sed '/aus Wikipedia, der freien Enzyklopädie/d' | \
+  sed -E '/Zur (Navigation|Suche) springen/d' | \
+  sed -E 's/^(.*)[[:blank:]]*\[Bearbeiten \| Quelltext bearbeiten\][[:blank:]]*/\1/' | \
+  eval "$filter_04" | \
+      sed -E 's/^(.*)[[:blank:]]*$/\1/' | \
+  sed -E 's/^[^a-zA-Z]*$//' | \
+      sed -E '/^[[:blank:]]*Abgerufen vo/d' | \
+  sed 's/\^//g' | \
+  sed -e '$d' | \
+  less -s -P " q = Beenden  (Anzeige durch den Pager 'less')"
+fi
+
+exit
