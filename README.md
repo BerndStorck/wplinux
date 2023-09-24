@@ -11,13 +11,13 @@ The script requires the following dependencies to be installed:
 
 ### External Programs Used
 
-| Program Name   | &nbsp;&nbsp;&nbsp;Task / Program Catgegory                    | &nbsp;&nbsp;&nbsp;Installed by default |
-|:---------------|:--------------------------------------------------------------|:---------------------------------------|
-| wikipedia2text | &nbsp;&nbsp;&nbsp;Converts Wikipedia articles to text         | &nbsp;&nbsp;&nbsp;no                   |
-| sed            | &nbsp;&nbsp;&nbsp;Manipulates text (deletes or replaces parts)| &nbsp;&nbsp;&nbsp;yes                  |
-| less           | &nbsp;&nbsp;&nbsp;Pager for viewing text files                | &nbsp;&nbsp;&nbsp;yes                  |
-| wget           | &nbsp;&nbsp;&nbsp;Downloads files from Internet servers       | &nbsp;&nbsp;&nbsp;yes                  |
-| grep           | &nbsp;&nbsp;&nbsp;Filters lines based on patterns             | &nbsp;&nbsp;&nbsp;yes                  |
+| Program Name   | &nbsp;&nbsp;&nbsp;Task / Program Catgegory            | &nbsp;&nbsp;&nbsp;Installed by default |
+|:---------------|:------------------------------------------------------|:---------------------------------------|
+| wikipedia2text | &nbsp;&nbsp;&nbsp;Converts Wikipedia articles to text | &nbsp;&nbsp;&nbsp;no                   |
+| sed            | &nbsp;&nbsp;&nbsp;Deletes or replaces text            | &nbsp;&nbsp;&nbsp;yes                  |
+| less           | &nbsp;&nbsp;&nbsp;Pager for viewing text files        | &nbsp;&nbsp;&nbsp;yes                  |
+| wget           | &nbsp;&nbsp;&nbsp;Downloads files from Servers        | &nbsp;&nbsp;&nbsp;yes                  |
+| grep           | &nbsp;&nbsp;&nbsp;Filters lines based on patterns     | &nbsp;&nbsp;&nbsp;yes                  |
 
 
 ## Installation
@@ -48,7 +48,7 @@ wplinux
 
 ## Author
 
-Bernd Storck: I am a certified webmaster/web developer and Linux aficionado from Berlin. I had my first programming experiences around 1984 with an ATARI 800XL. Since this time I've tried or learned a bunch of programming languages. Especially I'm certified as JavaScript developer, PHP Programmer and WebDevelopper. I have extensive experience in Bash Programming.
+Bernd Storck: I am a certified webmaster/web developer and Linux aficionado from Berlin. I had my first programming experiences around 1984 with an ATARI 800XL. Since this time I've tried or learned a bunch of programming languages. Especially I'm certified as JavaScript developer, PHP Programmer and WebDeveloper. I have extensive experience in Bash Programming.
 
 Contact: [Facebook: Linux-Infos von Bernd Storck](https://www.facebook.com/BStLinux/), [www.facebook.com/BStLinux](https://www.facebook.com/BStLinux/)
 
