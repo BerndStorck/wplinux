@@ -12,13 +12,13 @@ Die folgenden Programme **müssen** installiert sein:
 
 ### Externe Programme, die verwendet werden
 
-| Programmname   | &nbsp;&nbsp;&nbsp;Aufgabe / Programmkategorie       | &nbsp;&nbsp;&nbsp;Standardmäßig installiert |
-|:---------------|:----------------------------------------------------|:---------------------------------------|
-| wikipedia2text | &nbsp;&nbsp;&nbsp;Wandelt Wikipedia-Artikel zu Text | &nbsp;&nbsp;&nbsp;nein                 |
-| sed            | &nbsp;&nbsp;&nbsp;Löscht oder ersetzt Text          | &nbsp;&nbsp;&nbsp;ja                   |
-| less           | &nbsp;&nbsp;&nbsp;Pager zur Textanzeige             | &nbsp;&nbsp;&nbsp;ja                   |
-| wget           | &nbsp;&nbsp;&nbsp;Holt Dateien von Internetservern  | &nbsp;&nbsp;&nbsp;ja                   |
-| grep           | &nbsp;&nbsp;&nbsp;Filtert Zeilen nach Mustern       | &nbsp;&nbsp;&nbsp;ja                   |
+| Programmname   | &nbsp;&nbsp;Aufgabe / Programmkategorie   | &nbsp;&nbsp;Standardmäßig installiert |
+|:---------------|:------------------------------------------|:--------------------------------------|
+| wikipedia2text | &nbsp;&nbsp;Wandelt WP-Artikel zu Text    | &nbsp;&nbsp;nein                      |
+| sed            | &nbsp;&nbsp;Löscht oder ersetzt Text      | &nbsp;&nbsp;ja                        |
+| less           | &nbsp;&nbsp;Pager zur Textanzeige         | &nbsp;&nbsp;ja                        |
+| wget           | &nbsp;&nbsp;Holt Dateien aus dem Internet | &nbsp;&nbsp;ja                        |
+| grep           | &nbsp;&nbsp;Filtert Zeilen nach Mustern   | &nbsp;&nbsp;ja                        |
 
 ## Installation
 
