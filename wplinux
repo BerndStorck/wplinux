@@ -2,8 +2,8 @@
 #
 # wplinux
 #
-# Version     1.2.0
-# History:    2020-05-25, 2023-09-24
+# Version     1.3.0
+# History:    2020-05-25, 2023-09-24, 2023-09-29
 #
 # Project Description:
 #
@@ -23,7 +23,9 @@
 #
 
 
-TITLE=" |===–  FRAGE WIKIPEDIA NACH LINUX  –===| "
+# Global Variables and Constants: ....................
+
+readonly TITLE=" |===–  FRAGE WIKIPEDIA NACH LINUX  –===| "
 
 db="$(ls -1 ~/.wplinux)"
 
@@ -48,6 +50,8 @@ tableUNIX="${prefixTableUNIX}$(date -u +"%Y-%m-%d")"'.tmp'
 # echo "$tableGNU"
 # echo "$tableUNIX"
 
+
+# Functions: -----------------------------------------
 
 cls() {
   clear
@@ -150,21 +154,33 @@ getCategorizedCommands() {
 }
 
 
-cls
-echo -e " Wählen Sie eine Befehlsliste durch Eingabe der angezeigten Nummer!"
-echo "
-  (1) GNU Core Commands
+# Main: = = = = = = = = = = = = = = = = = = = = = = =
 
-  (2) UNIX Commands
-"
-read -p " ?: " int_choosen_command_set
-if [ $int_choosen_command_set -eq 2 ]; then
-  choosen_command_set="UNIX"
-else
-  choosen_command_set="GNU"
-fi
+while true; do
 
-# echo "[DEBUG] choosen_command_set: \"$choosen_command_set\""; exit
+while true; do
+  cls
+  echo -e " Wählen Sie eine Befehlsliste durch Eingabe der angezeigten Nummer!"
+  echo "
+    (1) GNU Core Commands
+
+    (2) UNIX Commands
+
+    (3) Ende / Quit
+  "
+  read -p " ?: " int_choosen_command_set
+  case "$int_choosen_command_set" in
+    1) choosen_command_set="GNU";  break ;;
+    2) choosen_command_set="UNIX"; break ;;
+    3) exit 0                     ;;
+    *)
+       echo 'Wählen Sie eine Zahl aus {1, 2, 3}!'
+       sleep 1
+       ;;
+  esac
+
+  # echo "[DEBUG] choosen_command_set: \"$choosen_command_set\""; exit
+done
 
 getTableRows  "$choosen_command_set"
 getCategories "$choosen_command_set"
@@ -211,17 +227,18 @@ fi
 
 # echo "$wikisearch"
 
-                  # For links which are goning to a subsektion of a
-if [ "$wikilink" ]; then  # .......  # wikipedia article. the script tries to start one
-                  # of the webbrowsers "links", "lynx" or "elinks".
-  if [ "$(command -v links2 > /dev/null)" ]; then
+# For links which are goning to a subsektion of a wikipedia article. the
+# script tries to start one of the webbrowsers "links", "lynx" or "elinks".
+
+if [ "$wikilink" ]; then
+  if command -v links2 > /dev/null 2>&1; then
     webbrowser="links2"
-  elif [ "$(command -v lynx > /dev/null)" ]; then
+  elif command -v lynx > /dev/null 2>&1; then
     webbrowser="lynx -nocolor"
-  elif [ "$(command -v elinks > /dev/null)" ]; then
+  elif command -v elinks > /dev/null 2>&1; then
     webbrowser="elinks"
   fi
-echo "[DEBUG] webbrowser:\"$webbrowser\" / wikilink: \"$wikilink\""; exit
+
   eval "$webbrowser" '$wikilink'
 
 else  # ...........................  # For commands, which have an own Wikipedia article.
@@ -260,7 +277,14 @@ else  # ...........................  # For commands, which have an own Wikipedia
       sed -E '/^[[:blank:]]*Abgerufen vo/d' | \
   sed 's/\^//g' | \
   sed -e '$d' | \
-  less -s -P " q = Beenden  (Anzeige durch den Pager 'less')"
+  less -s -P ' q = Beenden  (Anzeige durch den Pager "less")'
 fi
 
-exit
+read -rp "Weiter mit [Enter], Abbruch mit 'q' oder 'e': "
+case "$REPLY" in
+  [Qq]|[Ee]|quit|end|Ende)
+    exit 0
+    ;;
+esac
+
+done
