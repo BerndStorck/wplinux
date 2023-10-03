@@ -2,8 +2,8 @@
 #
 # wplinux
 #
-# Version     1.3.1
-# History:    2020-05-25, 2023-09-24, 2023-09-29
+# Version     1.3.4
+# History:    2020-05-25, 2023-09-24, 2023-09-29, 2023-10-01, 2023-10-03
 #
 # Project Description:
 #
@@ -22,25 +22,34 @@
 # License:    GNU General Public License 3.0
 #
 
-
 # Global Variables and Constants: ....................
 
 readonly TITLE=" |===–  FRAGE WIKIPEDIA NACH LINUX  –===| "
 
-readonly PROG_NAME="wplinux"
-readonly PROG_VERSION="1.3.1"
+readonly PROG_NAME="WpLinux"
+readonly ORIGINAL_SCRIPT_NAME="wplinux"
+readonly CURRENT_SCRIPT_NAME="${0##*/}"  ## Name of the script file
+readonly VERSION="1.3.3"
+readonly VERSIONS_TIME_STAMP="2023-09-30 08:48:23"  # date +"%Y-%m-%d %T"
+
+readonly UNIX_LINKS_SOURCE="https://de.wikipedia.org/wiki/Benutzer:Benji/Unix/Vorlage:Navigationsleiste_Unix-Befehle"
+readonly GNU_LINKS_SOURCE="https://de.wikipedia.org/wiki/Vorlage:Navigationsleiste_Befehle_der_GNU_core_utilities"
+
 
 readonly WHITE="\e[1;37m"
 readonly BLUE="\e[1;34m"
 readonly COLOROFF="\e[0m"
 
-db="$(ls -1 ~/.wplinux)"
+# db="$(ls -1 ~/.wplinux)"
 
 declare categories=
 declare articles=
 
-declare choosen_categorie=
-declare choosen_article=
+declare chosenCommandSet=
+declare chosenCategory=
+declare chosenArticle=
+
+declare current_color=
 
 declare dataDir="/tmp/"
 declare prefixTableGNU="${dataDir}wplinux-tableGNU-"
@@ -60,9 +69,82 @@ tableUNIX="${prefixTableUNIX}$(date -u +"%Y-%m-%d")"'.tmp'
 
 # Functions: -----------------------------------------
 
+usage () { 
+	echo -e "\n $PROG_NAME ($PROG_VERSION)
+
+ Wenn \"datei\" der Name einer Textdatei ist, dann extrahiert der Befehl
+ \"sample 200 datei\" 200 Zeilen aus \"datei\" und schreibt sie in eine
+ Datei namens \"samples.txt\".
+
+ Das Skript wurde erstellt, um die Struktur der Datensätze in einer
+ Flat-File-Datenbank mit ca. 200000 Datensätzen zu untersuchen.
+
+ AUFRUF
+\t$CURRENT_SCRIPT_NAME <WIE_VIELE_ZEILEN_EXTRAHIEREN> <NAME_DER_EINGABEDATEI>
+
+ BEISPIEL	
+\t$CURRENT_SCRIPT_NAME 200 dictverbs.txt\n"
+
+}
+
+
 cls() {
   clear
   echo -e "\n$TITLE\n"
+}
+
+
+selectCommandSet () {
+# Legt fest, welches Set von Kommandos angezeigt werden soll. GNU- oder UNIX-Kommandos?
+# Gibt den Wert fuer die globale Bariabel chosenCommandSet zurueck.
+
+  # Die Variable local macht die Variable nur innerhalb der Funktion gültig
+  local chosenCommandSetNum
+
+  while true; do  
+    cls
+    echo -e " Wählen Sie eine Befehlsliste durch ${current_color}Eingabe der angezeigten Nummer!$COLOROFF"
+    echo -e "
+      (${current_color}1$COLOROFF) GNU Core Commands
+  
+      (${current_color}2$COLOROFF) UNIX Commands
+  
+      (${current_color}3$COLOROFF) Ende / Quit
+    "
+    current_color="$COLOROFF"
+    
+    	read -rp " ?: " chosenCommandSetNum
+    	case "$chosenCommandSetNum" in
+    		1) chosenCommandSet="GNU"  ;;
+    		2) chosenCommandSet="UNIX" ;;
+    		3) exit 0        ;;
+    		*)
+     			 current_color="$WHITE"
+    #		 echo -e "\n$WHITE Wählen Sie eine Zahl aus {1, 2, 3}! $COLOROFF" > /dev/stderr
+       		 printf "\n%b %s %b" "$WHITE" "Wählen Sie eine Zahl aus {1, 2, 3}!" "$COLOROFF" > /dev/stderr
+    			 sleep 2
+    			 ;;
+    	esac
+    
+    [[ "$chosenCommandSet" =~ GNU|UNIX ]] && break
+  
+  done
+}
+
+
+show_menu () {
+# Zeigt das Menue zur Auswahl der Befehlsliste an.
+#
+  cls
+  echo -e " Wählen Sie eine Befehlsliste durch ${current_color}Eingabe der angezeigten Nummer!$COLOROFF"
+  echo -e "
+    (${current_color}1$COLOROFF) GNU Core Commands
+
+    (${current_color}2$COLOROFF) UNIX Commands
+
+    (${current_color}3$COLOROFF) Ende / Quit
+  "
+  current_color="$COLOROFF"
 }
 
 
@@ -75,9 +157,12 @@ getTableRows() {
 # tries to display the beginning of the articles in text mode.
 
   local currentWikiTable="table${1}"
+  local source_page
   local_source_copy='wplinux-source_'"$(date -u +"%Y-%m-%d")"'.tmp'
 
   # Removes obviously unusable files, which are nearly empty:
+  # echo "[DEBUG] In der Funktion getTableRow: ${!currentWikiTable}"; exit
+   
   if [ -f "${!currentWikiTable}" ] && (( "$(wc --bytes < "${!currentWikiTable}")" < 20 )); then
     rm -f "${!currentWikiTable}"
   fi
@@ -87,9 +172,9 @@ getTableRows() {
 
     # Set the address for the web page, which is the source for the used links:
     if [ "$1" = "UNIX" ]; then
-      source_page="https://de.wikipedia.org/wiki/Benutzer:Benji/Unix/Vorlage:Navigationsleiste_Unix-Befehle"
+      source_page="$UNIX_LINKS_SOURCE"
     else
-      source_page="https://de.wikipedia.org/wiki/Vorlage:Navigationsleiste_Befehle_der_GNU_core_utilities"
+      source_page="$GNU_LINKS_SOURCE"
     fi
 
     # Download data source, the web page with the link list:
@@ -101,9 +186,9 @@ getTableRows() {
     done
 
     # Extract central table of the web page with the relevant data:
-    grep -m1 -A9999 '<tbody' "$local_source_copy" | \
-    grep -B9999 '</\tbody' | \
-    sed '/tbody/d' | \
+    grep -m1 -A9999 '<tbody' "$local_source_copy" |\
+    grep -B9999 '</tbody' |\
+    sed '/tbody/d' |\
     sed '/^[[:blank:]]*$/d' > "${!currentWikiTable}"
     echo "##EOF##" >> "${!currentWikiTable}"
 
@@ -135,29 +220,49 @@ getCategorizedCommands() {
 # "join:Join_(Unix)".
   local currentWikiTable="table${1}"
   local current_category="$2"
-
+  
   if [ "$1" = "UNIX" ]; then     # UNIX Commands:
     articles="$(\
-      grep -m1 -E -A9999 "^<td\b[^>]*\">(${current_category}):$" "${!currentWikiTable}" | \
+      grep -m1 -E -A9999 "^<td\b[^>]*\">(${current_category}):$" "${!currentWikiTable}" |\
       tail -n +3 | \
-      grep -m1 -E -B9999 '(</tr>|##EOF##)' | \
+      grep -m1 -E -B9999 '(</tr>|##EOF##)' |\
       head -n -1 | \
-      sed 's:<a href=:\n<a href=:g' | \
+      sed 's:<a href=:\n<a href=:g' |\
       grep '^<a href=' | \
-      sed '/\(Seite nicht vorhanden\)/d' | \
+      sed '/\(Seite nicht vorhanden\)/d' |\
       sed -E '/^<a href=/s;^.*/wiki/([^"]*)".*>([[:alnum:]]*)</a>.*$;\2:\1;' \
       )"
   else                 # GNU Core Commands:
     articles="$(\
-      grep -m1 -E -A9999 "^<td .*<b>(.*${current_category}.*)<\/b>$" "${!currentWikiTable}" | \
+      grep -m1 -E -A9999 "^<td .*<b>(.*${current_category}.*)</b>$" "${!currentWikiTable}" |\
       tail -n +3 | \
-      grep -m1 -E -B9999 "^(<td .*<b>.*<\/b>|##EOF##)$" | \
+      grep -m1 -E -B9999 "^(<td .*<b>.*</b>|##EOF##)$" |\
       head -n -1 | \
-      grep -F '<a href=' | \
+      grep -F '<a href=' |\
       sed -E '/^(<p>)?<a href=/s;^.*/wiki/([^"]*)".*>([[:alnum:]]*)</a>.*$;\2:\1;' \
     )"
   fi
-    wikiTable="${!currentWikiTable}"
+  wikiTable="${!currentWikiTable}"
+}
+
+
+ask4Exit () {
+  echo -en "\n Weiter mit [Enter], Abbruch mit 'q' oder 'e': "
+  read -r
+  case "$REPLY" in
+    [Qq]|[Ee]|quit|end|Ende)
+      quit 0
+      ;;
+    *)
+      cls 
+      ;;    
+  esac
+}
+
+
+quit () {
+  clear
+  exit "$1"
 }
 
 
@@ -165,137 +270,107 @@ getCategorizedCommands() {
 
 while true; do
 
-while true; do
+  selectCommandSet  # Der Anwender waehlt ein Kommandoset, entweder UNIX- oder GNU-Kommandos.
+  # echo "[DEBUG] chosenCommandSet in main: \"$chosenCommandSet\""; read
+
+  getTableRows  "$chosenCommandSet"
+  getCategories "$chosenCommandSet"
+
   cls
-  echo -e " Wählen Sie eine Befehlsliste durch ${current_color}Eingabe der angezeigten Nummer!$COLOROFF"
-  echo -e "
-    (${current_color}1$COLOROFF) GNU Core Commands
+  echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Themenbereich!\n"
+  count=0
+  for i in $categories; do
+    count=$(( count + 1 ))
+    echo -e "\t$count) $i";
+    categoryArray["$count"]="$i"
+  done
 
-    (${current_color}2$COLOROFF) UNIX Commands
+  echo; read -r -p " ?: " chosenCategoryIndexNumber
+  chosenCategory="${categoryArray["$chosenCategoryIndexNumber"]}"
+  getCategorizedCommands "$chosenCommandSet" "$chosenCategory"
 
-    (${current_color}3$COLOROFF) Ende / Quit
-  "
-  read -p " ?: " int_choosen_command_set
-  case "$int_choosen_command_set" in
-    1) choosen_command_set="GNU";  break ;;
-    2) choosen_command_set="UNIX"; break ;;
-    3) exit 0                     ;;
-    *)
-       printf "\n$WHITE %s $COLOROFF" 'Wählen Sie eine Zahl aus {1, 2, 3}!'
-       sleep 2
-       current_color="$WHITE"
-       ;;
-  esac
-
-  # echo "[DEBUG] choosen_command_set: \"$choosen_command_set\""; exit
-done
-
-current_color=
-
-getTableRows  "$choosen_command_set"
-getCategories "$choosen_command_set"
-
-cls
-echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Themenbereich!\n"
-count=0
-for i in $categories; do
-  count=$(( count + 1 ))
-  echo -e "\t$count) $i";
-  arr_cat["$count"]="$i"
-done
-
-echo; read -r -p " ?: " int_choosen_categorie
-choosen_categorie="${arr_cat["$int_choosen_categorie"]}"
-getCategorizedCommands "$choosen_command_set" "$choosen_categorie"
-
-count=0
-for i in ${articles}; do
-  count=$(( count + 1 ))
-  arr_key[  "$count" ]="$(cut -d: -f1 <<< "$i")"
-  arr_link[ "$count" ]="$(cut -d: -f2 <<< "$i")"
-  article_keys="${article_keys}$(cut -d: -f1 <<< "$i")..(${count})"
-  if [ $(( count % 3 )) -ne 0 ]; then
-    separator="\n"
-  else
-    separator="\n"
-  fi
-  article_keys="${article_keys}${separator}"
-done
-article_keys="${article_keys}\n"
-
-cls
-echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Wikipedia-Artikel!\n"
-echo -e "$(echo -e "$article_keys" | columns -I4 -c3 -w20 --line-separation="\n")"
-echo; read -r -p " ?: " int_choosen_article
-# echo "${arr_link["$int_choosen_article"]}"
-
-if [ "$(grep -F -c '#' <<< "${arr_link["$int_choosen_article"]}")" -eq 0 ]; then
-    wikisearch="${arr_link["$int_choosen_article"]}"
-else
-    wikilink="https://de.wikipedia.org/wiki/"${arr_link["$int_choosen_article"]}""
-fi
-
-# echo "$wikisearch"
-
-# For links which are goning to a subsektion of a wikipedia article. the
-# script tries to start one of the webbrowsers "links", "lynx" or "elinks".
-
-if [ "$wikilink" ]; then
-  if command -v links2 > /dev/null 2>&1; then
-    webbrowser="links2"
-  elif command -v lynx > /dev/null 2>&1; then
-    webbrowser="lynx -nocolor"
-  elif command -v elinks > /dev/null 2>&1; then
-    webbrowser="elinks"
-  fi
-
-  eval "$webbrowser" '$wikilink'
-
-else  # ...........................  # For commands, which have an own Wikipedia article.
-
-  wikipedia2text -l de "$wikisearch" > /tmp/wplinux.tmp
-  if grep -q "^Inhaltsverzeichnis" /tmp/wplinux.tmp; then
-    # echo "Inhaltsverzeichnis"
-    filter_02='grep -F -m1 -B400 "Inhaltsverzeichnis"'
-    filter_04="cat"
-  else
-    filter_02="cat"
-    if grep -q "Weblinks" /tmp/wplinux.tmp; then
-      # echo "Weblinks"
-      # filter_04="grep -m1 -E -B9999 '^Weblinks[[:blank:]]*$'"
-      filter_04="grep -m1 -E -B9999 '^Weblinks[[:blank:]]*$'"
+  count=0
+  article_keys=
+  for i in ${articles}; do
+    count=$(( count + 1 ))
+    commandKeyArray[  "$count" ]="$(cut -d: -f1 <<< "$i")"
+    commandLinkArray[ "$count" ]="$(cut -d: -f2 <<< "$i")"
+    article_keys="${article_keys}$(cut -d: -f1 <<< "$i")..(${count})"
+    if [ $(( count % 3 )) -ne 0 ]; then
+      separator="\n"
     else
-      filter_04="cat"
+      separator="\n"
     fi
+    article_keys="${article_keys}${separator}"
+  done
+  article_keys="${article_keys}\n"
+
+  cls
+  echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Wikipedia-Artikel!\n"
+  echo -e "$(echo -e "$article_keys" | columns -I4 -c3 -w20 --line-separation="\n")"
+  echo; read -r -p " ?: " chosenArticleIndexNumber
+  # echo "${commandLinkArray["$chosenArticleIndexNumber"]}"
+
+  if [ "$(grep -F -c '#' <<< "${commandLinkArray["$chosenArticleIndexNumber"]}")" -eq 0 ]; then
+      wikisearch="${commandLinkArray["$chosenArticleIndexNumber"]}"
+  else
+      wikilink="https://de.wikipedia.org/wiki/"${commandLinkArray["$chosenArticleIndexNumber"]}""
   fi
 
+  # echo "[DEBUG] wikisearch: \"$wikisearch\""
 
-# wikipedia2text -l de "$wikisearch" | grep -m1 "^Weblinks" | \
-# sed -E 's/^(.*)[[:blank:]]*\[Bearbeiten \| Quelltext bearbeiten\]$/\1 \2/' | \
-# sed -E 's:^(.*)$:##\1##:' | od -a
-# exit
+  # For links, which are going to a subsection of a wikipedia article, the
+  # script tries to start one of the webbrowsers "links2", "lynx" or "elinks".
+  if [ "$wikilink" ]; then
+    if command -v links2 > /dev/null 2>&1; then
+      webbrowser="links2"
+    elif command -v lynx > /dev/null 2>&1; then
+      webbrowser="lynx -nocolor"
+    elif command -v elinks > /dev/null 2>&1; then
+      webbrowser="elinks"
+    fi
+
+    eval "$webbrowser" '$wikilink'
+
+  else  # ...........................  # For commands, which have an own Wikipedia article.
+
+    wikipedia2text -l de "$wikisearch" > /tmp/wplinux.tmp
+    if grep -q "^Inhaltsverzeichnis" /tmp/wplinux.tmp; then
+      # echo "Inhaltsverzeichnis"
+      filter_02='grep -F -m1 -B400 "Inhaltsverzeichnis"'
+      filter_04="cat"
+    else
+      filter_02="cat"
+      if grep -q "Weblinks" /tmp/wplinux.tmp; then
+        # echo "Weblinks"
+        # filter_04="grep -m1 -E -B9999 '^Weblinks[[:blank:]]*$'"
+        filter_04="grep -m1 -E -B9999 '^Weblinks[[:blank:]]*$'"
+      else
+        filter_04="cat"
+      fi
+    fi
 
 
-  eval "$filter_02" < /tmp/wplinux.tmp | \
-  sed '/^[[:blank:]]*Link:/d' | \
-  sed '/aus Wikipedia, der freien Enzyklopädie/d' | \
-  sed -E '/Zur (Navigation|Suche) springen/d' | \
-  sed -E 's/^(.*)[[:blank:]]*\[Bearbeiten \| Quelltext bearbeiten\][[:blank:]]*/\1/' | \
-  eval "$filter_04" | \
-      sed -E 's/^(.*)[[:blank:]]*$/\1/' | \
-  sed -E 's/^[^a-zA-Z]*$//' | \
-      sed -E '/^[[:blank:]]*Abgerufen vo/d' | \
-  sed 's/\^//g' | \
-  sed -e '$d' | \
-  less -s -P ' q = Beenden  (Anzeige durch den Pager "less")'
-fi
+  # wikipedia2text -l de "$wikisearch" | grep -m1 "^Weblinks" |\
+  # sed -E 's/^(.*)[[:blank:]]*\[Bearbeiten \| Quelltext bearbeiten\]$/\1 \2/' |\
+  # sed -E 's:^(.*)$:##\1##:' | od -a
+  # exit
 
-echo -en "\n Weiter mit [Enter], Abbruch mit 'q' oder 'e': "
-read -r
-case "$REPLY" in
-  [Qq]|[Ee]|quit|end|Ende)
-    exit 0
-    ;;
-esac
+
+    eval "$filter_02" < /tmp/wplinux.tmp |\
+    sed '/^[[:blank:]]*Link:/d' |\
+    sed '/aus Wikipedia, der freien Enzyklopädie/d' |\
+    sed -E '/Zur (Navigation|Suche) springen/d' |\
+    sed -E 's/^(.*)[[:blank:]]*\[Bearbeiten \| Quelltext bearbeiten\][[:blank:]]*/\1/' |\
+    eval "$filter_04" |\
+        sed -E 's/^(.*)[[:blank:]]*$/\1/' |\
+    sed -E 's/^[^a-zA-Z]*$//' |\
+        sed -E '/^[[:blank:]]*Abgerufen vo/d' |\
+    sed 's/\^//g' |\
+    sed -e '$d' |\
+    less -s -P ' q = Beenden  (Anzeige durch den Pager "less")'
+  fi
+  
+  ask4Exit
 
 done
