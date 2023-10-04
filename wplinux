@@ -3,7 +3,7 @@
 # wplinux
 #
 # Version     1.3.4
-# History:    2020-05-25, 2023-09-24, 2023-09-29, 2023-10-01, 2023-10-03
+# History:    2020-05-25, 2023-09-24, 2023-09-29, 2023-10-01, 2023-10-03, 2023-10-04
 #
 # Project Description:
 #
@@ -29,7 +29,7 @@ readonly TITLE=" |===–  FRAGE WIKIPEDIA NACH LINUX  –===| "
 readonly PROG_NAME="WpLinux"
 readonly ORIGINAL_SCRIPT_NAME="wplinux"
 readonly CURRENT_SCRIPT_NAME="${0##*/}"  ## Name of the script file
-readonly VERSION="1.3.3"
+readonly VERSION="1.3.4"
 readonly VERSIONS_TIME_STAMP="2023-09-30 08:48:23"  # date +"%Y-%m-%d %T"
 
 readonly UNIX_LINKS_SOURCE="https://de.wikipedia.org/wiki/Benutzer:Benji/Unix/Vorlage:Navigationsleiste_Unix-Befehle"
@@ -69,8 +69,8 @@ tableUNIX="${prefixTableUNIX}$(date -u +"%Y-%m-%d")"'.tmp'
 
 # Functions: -----------------------------------------
 
-usage () { 
-	echo -e "\n $PROG_NAME ($PROG_VERSION)
+usage() {
+  echo -e "\n $PROG_NAME ($PROG_VERSION)
 
  Wenn \"datei\" der Name einer Textdatei ist, dann extrahiert der Befehl
  \"sample 200 datei\" 200 Zeilen aus \"datei\" und schreibt sie in eine
@@ -82,7 +82,7 @@ usage () {
  AUFRUF
 \t$CURRENT_SCRIPT_NAME <WIE_VIELE_ZEILEN_EXTRAHIEREN> <NAME_DER_EINGABEDATEI>
 
- BEISPIEL	
+ BEISPIEL
 \t$CURRENT_SCRIPT_NAME 200 dictverbs.txt\n"
 
 }
@@ -101,33 +101,34 @@ selectCommandSet () {
   # Die Variable local macht die Variable nur innerhalb der Funktion gültig
   local chosenCommandSetNum
 
-  while true; do  
+  while true; do
     cls
     echo -e " Wählen Sie eine Befehlsliste durch ${current_color}Eingabe der angezeigten Nummer!$COLOROFF"
     echo -e "
       (${current_color}1$COLOROFF) GNU Core Commands
-  
+
       (${current_color}2$COLOROFF) UNIX Commands
-  
+
       (${current_color}3$COLOROFF) Ende / Quit
     "
     current_color="$COLOROFF"
-    
-    	read -rp " ?: " chosenCommandSetNum
-    	case "$chosenCommandSetNum" in
-    		1) chosenCommandSet="GNU"  ;;
-    		2) chosenCommandSet="UNIX" ;;
-    		3) exit 0        ;;
-    		*)
-     			 current_color="$WHITE"
-    #		 echo -e "\n$WHITE Wählen Sie eine Zahl aus {1, 2, 3}! $COLOROFF" > /dev/stderr
-       		 printf "\n%b %s %b" "$WHITE" "Wählen Sie eine Zahl aus {1, 2, 3}!" "$COLOROFF" > /dev/stderr
-    			 sleep 2
-    			 ;;
-    	esac
-    
+
+    chosenCommandSet=
+      read -rp " ?: " chosenCommandSetNum
+      case "$chosenCommandSetNum" in
+        1) chosenCommandSet="GNU"  ;;
+        2) chosenCommandSet="UNIX" ;;
+        3) exit 0        ;;
+        *)
+            current_color="$WHITE"
+    #     echo -e "\n$WHITE Wählen Sie eine Zahl aus {1, 2, 3}! $COLOROFF" > /dev/stderr
+            printf "\n%b %s %b" "$WHITE" "Wählen Sie eine Zahl aus {1, 2, 3}!" "$COLOROFF" > /dev/stderr
+            sleep 1.5
+            ;;
+      esac
+
     [[ "$chosenCommandSet" =~ GNU|UNIX ]] && break
-  
+
   done
 }
 
@@ -161,8 +162,6 @@ getTableRows() {
   local_source_copy='wplinux-source_'"$(date -u +"%Y-%m-%d")"'.tmp'
 
   # Removes obviously unusable files, which are nearly empty:
-  # echo "[DEBUG] In der Funktion getTableRow: ${!currentWikiTable}"; exit
-   
   if [ -f "${!currentWikiTable}" ] && (( "$(wc --bytes < "${!currentWikiTable}")" < 20 )); then
     rm -f "${!currentWikiTable}"
   fi
@@ -199,12 +198,16 @@ getTableRows() {
 }
 
 
-getCategories() {
+getCategories () {
 # The categories of commands are in a td field of the input table which
 # contains only the category name included in a the HTML bold tag.
 # Something like this "<td [...]><b>category name</b>[...]</td>.
+#
+# Fills the global variable 'categories' with a list of the found categories.
+
   local currentWikiTable="table${1}"
 
+  categories=
   if [ "$1" = "UNIX" ]; then
     categories="$( grep -F -A1 '<tr>' "${!currentWikiTable}" | sed -En '/^<td /s/^.*\">(.*):$/\1/p' )"
   else
@@ -214,13 +217,14 @@ getCategories() {
 }
 
 
-getCategorizedCommands() {
+getCategorizedCommands () {
 # Generates a key-value list with the command as key and the relative
 # wikipedia address for the article. Result is a list with rows like
 # "join:Join_(Unix)".
+
   local currentWikiTable="table${1}"
   local current_category="$2"
-  
+
   if [ "$1" = "UNIX" ]; then     # UNIX Commands:
     articles="$(\
       grep -m1 -E -A9999 "^<td\b[^>]*\">(${current_category}):$" "${!currentWikiTable}" |\
@@ -246,6 +250,32 @@ getCategorizedCommands() {
 }
 
 
+ask4Selection () {
+# Eine nummerische Eingabe abfragen und unzulaessige Eingaben abweisen.
+#
+  local lastAllowedNumber="$1"
+  local regexList
+  local allowedNumbers
+  local selectionOk
+
+  regexList=$(seq 1 $lastAllowedNumber | tr '\n' '|')
+  regexList="${regexList%*|}"
+  allowedNumbers="${regexList//|/, }"
+  selectionOk=false
+  echo
+  until [ "$selectionOk" = true ]; do
+    read -r -p " ?: "
+    if [[ "$REPLY" =~ ^($regexList)$ ]]; then
+      selectionOk=true
+    else
+      selectionOk=false
+      printf "\n HINWEIS: Geben sie eine der aufgeführten Nummern ein! {%s}\n" "$allowedNumbers" > /dev/stderr
+    fi
+  done
+  echo "$REPLY"
+}
+
+
 ask4Exit () {
   echo -en "\n Weiter mit [Enter], Abbruch mit 'q' oder 'e': "
   read -r
@@ -254,8 +284,8 @@ ask4Exit () {
       quit 0
       ;;
     *)
-      cls 
-      ;;    
+      cls
+      ;;
   esac
 }
 
@@ -271,13 +301,13 @@ quit () {
 while true; do
 
   selectCommandSet  # Der Anwender waehlt ein Kommandoset, entweder UNIX- oder GNU-Kommandos.
-  # echo "[DEBUG] chosenCommandSet in main: \"$chosenCommandSet\""; read
 
   getTableRows  "$chosenCommandSet"
-  getCategories "$chosenCommandSet"
+  getCategories "$chosenCommandSet" # Speichert in der Textvariablen 'categories' die Liste der Kategorien.
 
   cls
   echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Themenbereich!\n"
+  categoryArray=()
   count=0
   for i in $categories; do
     count=$(( count + 1 ))
@@ -285,12 +315,29 @@ while true; do
     categoryArray["$count"]="$i"
   done
 
-  echo; read -r -p " ?: " chosenCategoryIndexNumber
+  # Eingabe abfragen und unzulaessige Eingaben abweisen:
+  list=$(seq 1 ${#categoryArray[@]} | tr '\n' '|')
+  list="${list%*|}"
+  allowedNumbers="${list//|/, }"
+  selectionOk=false
+  echo
+  until [ "$selectionOk" = true ]; do
+    read -r -p " ?: " chosenCategoryIndexNumber
+    if [[ "$chosenCategoryIndexNumber" =~ ^($list)$ ]]; then
+      selectionOk=true
+    else
+      selectionOk=false
+      printf "\n HINWEIS: Geben sie eine der aufgeführten Nummern ein! {%s}\n" "$allowedNumbers"
+    fi
+  done
+
   chosenCategory="${categoryArray["$chosenCategoryIndexNumber"]}"
+
+  # Speichert eine Liste mit Reihen wie "join:Join_(Unix)" in die globalke Variabel 'articles':
   getCategorizedCommands "$chosenCommandSet" "$chosenCategory"
 
   count=0
-  article_keys=
+  article_keys=   # Wird mit jedem neuen Menueaufruf erst geleert und anschliessend neu gefuellt.
   for i in ${articles}; do
     count=$(( count + 1 ))
     commandKeyArray[  "$count" ]="$(cut -d: -f1 <<< "$i")"
@@ -308,16 +355,15 @@ while true; do
   cls
   echo -e " Wählen Sie durch Eingabe der zugehörigen Nummer einen Wikipedia-Artikel!\n"
   echo -e "$(echo -e "$article_keys" | columns -I4 -c3 -w20 --line-separation="\n")"
-  echo; read -r -p " ?: " chosenArticleIndexNumber
-  # echo "${commandLinkArray["$chosenArticleIndexNumber"]}"
+
+  # was: echo; read -r -p " ?: " chosenArticleIndexNumber
+  chosenArticleIndexNumber="$(ask4Selection $count)"
 
   if [ "$(grep -F -c '#' <<< "${commandLinkArray["$chosenArticleIndexNumber"]}")" -eq 0 ]; then
       wikisearch="${commandLinkArray["$chosenArticleIndexNumber"]}"
   else
       wikilink="https://de.wikipedia.org/wiki/"${commandLinkArray["$chosenArticleIndexNumber"]}""
   fi
-
-  # echo "[DEBUG] wikisearch: \"$wikisearch\""
 
   # For links, which are going to a subsection of a wikipedia article, the
   # script tries to start one of the webbrowsers "links2", "lynx" or "elinks".
@@ -370,7 +416,7 @@ while true; do
     sed -e '$d' |\
     less -s -P ' q = Beenden  (Anzeige durch den Pager "less")'
   fi
-  
+
   ask4Exit
 
 done
