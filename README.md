@@ -1,6 +1,6 @@
 # wplinux 
 
-**Version: 1.2.0, 2023-09-24**
+**Version: 1.3.4, 2023-10-04**
 
 ## Project Description:
 Provides information about Unix and Linux commands from German Wikipedia articles in the bash shell. This script reads and parses Wikipedia pages and tries to display the beginning of the articles concerning those commands in text mode right in the terminal.
@@ -11,14 +11,18 @@ The script requires the following dependencies to be installed:
 
 ### External Programs Used
 
-| Program Name   | &nbsp;&nbsp;&nbsp;Task / Program Catgegory            | &nbsp;&nbsp;&nbsp;Installed by default |
-|:---------------|:------------------------------------------------------|:---------------------------------------|
-| wikipedia2text | &nbsp;&nbsp;&nbsp;Converts Wikipedia articles to text | &nbsp;&nbsp;&nbsp;no                   |
-| sed            | &nbsp;&nbsp;&nbsp;Deletes or replaces text            | &nbsp;&nbsp;&nbsp;yes                  |
-| less           | &nbsp;&nbsp;&nbsp;Pager for viewing text files        | &nbsp;&nbsp;&nbsp;yes                  |
-| wget           | &nbsp;&nbsp;&nbsp;Downloads files from Servers        | &nbsp;&nbsp;&nbsp;yes                  |
-| grep           | &nbsp;&nbsp;&nbsp;Filters lines based on patterns     | &nbsp;&nbsp;&nbsp;yes                  |
+| Program Name   | &nbsp;&nbsp;&nbsp;Task / Program Catgegory           | &nbsp;&nbsp;&nbsp;Installed by default|
+|:---------------|:-----------------------------------------------------|:--------------------------------------|
+| wikipedia2text | &nbsp;&nbsp;&nbsp;Converts Wikipedia articles to text| &nbsp;&nbsp;&nbsp;no                  |
+| links2         | &nbsp;&nbsp;&nbsp;Shows Webpages in the Terminal     | &nbsp;&nbsp;&nbsp;no                  |
+| lynx           | &nbsp;&nbsp;&nbsp;Shows Webpages in the Terminal     | &nbsp;&nbsp;&nbsp;no                  |
+| elinks         | &nbsp;&nbsp;&nbsp;Shows Webpages in the Terminal     | &nbsp;&nbsp;&nbsp;no                  |
+| sed            | &nbsp;&nbsp;&nbsp;Deletes or replaces text           | &nbsp;&nbsp;&nbsp;yes                 |
+| less           | &nbsp;&nbsp;&nbsp;Pager for viewing text files       | &nbsp;&nbsp;&nbsp;yes                 |
+| wget           | &nbsp;&nbsp;&nbsp;Downloads files from Servers       | &nbsp;&nbsp;&nbsp;yes                 |
+| grep           | &nbsp;&nbsp;&nbsp;Filters lines based on patterns    | &nbsp;&nbsp;&nbsp;yes                 |
 
+Only one of the web browsers 'links2', 'lynx' or 'elinks' needs to be installed.
 
 ## Installation
 

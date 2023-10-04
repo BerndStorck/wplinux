@@ -1,24 +1,27 @@
 
 # wplinux 
 
-**Version: 1.2.0, 2023-09-24**
+**Version: 1.3.4, 2023-10-04**
 
 ## Projektbeschreibung:
 Zeigt Informationen über Unix- und Linux-Befehle aus deutschen Wikipedia-Artikeln in der Bash-Shell an. Dieses Skript liest und analysiert Wikipedia-Seiten und versucht, den Anfang der Artikel zu den entsprechenden Befehlen im Textmodus direkt im Terminal anzuzeigen.
 
 ## Anforderungen
 
-Die folgenden Programme **müssen** installiert sein:
+Die folgenden Programme **müssen** installiert sein; von den Programmen 'links2', 'lynx' oder 'elinks' allerdings nur eines.
 
 ### Externe Programme, die verwendet werden
 
-| Programmname   | &nbsp;&nbsp;Aufgabe / Programmkategorie   | &nbsp;&nbsp;Standardmäßig installiert |
-|:---------------|:------------------------------------------|:--------------------------------------|
-| wikipedia2text | &nbsp;&nbsp;Wandelt WP-Artikel zu Text    | &nbsp;&nbsp;nein                      |
-| sed            | &nbsp;&nbsp;Löscht oder ersetzt Text      | &nbsp;&nbsp;ja                        |
-| less           | &nbsp;&nbsp;Pager zur Textanzeige         | &nbsp;&nbsp;ja                        |
-| wget           | &nbsp;&nbsp;Holt Dateien aus dem Internet | &nbsp;&nbsp;ja                        |
-| grep           | &nbsp;&nbsp;Filtert Zeilen nach Mustern   | &nbsp;&nbsp;ja                        |
+| Programmname   | &nbsp;&nbsp;Aufgabe / Programmkategorie    | &nbsp;&nbsp;Standardmäßig installiert|
+|:---------------|:-------------------------------------------|:-------------------------------------|
+| wikipedia2text | &nbsp;&nbsp;Wandelt WP-Artikel zu Text     | &nbsp;&nbsp;nein                     |
+| links2         | &nbsp;&nbsp;Zeigt Webseiten im Terminal an | &nbsp;&nbsp;nein                     |
+| lynx           | &nbsp;&nbsp;Zeigt Webseiten im Terminal an | &nbsp;&nbsp;nein                     |
+| elinks         | &nbsp;&nbsp;Zeigt Webseiten im Terminal an | &nbsp;&nbsp;nein                     |
+| sed            | &nbsp;&nbsp;Löscht oder ersetzt Text       | &nbsp;&nbsp;ja                       |
+| less           | &nbsp;&nbsp;Pager zur Textanzeige          | &nbsp;&nbsp;ja                       |
+| wget           | &nbsp;&nbsp;Holt Dateien aus dem Internet  | &nbsp;&nbsp;ja                       |
+| grep           | &nbsp;&nbsp;Filtert Zeilen nach Mustern    | &nbsp;&nbsp;ja                       |
 
 ## Installation
 
